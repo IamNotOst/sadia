@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Полноэкранное видео</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            touch-action: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        
+        #video-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 1000;
+        }
+        
+        #video-player {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 1001;
+            max-width: 80%;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="video-container">
+        <video id="video-player" playsinline>
+            <source src="pic/video.mp4" type="video/mp4">
+            Ваш браузер не поддерживает видео.
+        </video>
+    </div>
+    
+    <div id="message" class="message hidden"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const video = document.getElementById('video-player');
+            const messageEl = document.getElementById('message');
+            
+            // Функция показа сообщения
+            function showMessage(text, duration = 2000) {
+                messageEl.textContent = text;
+                messageEl.classList.remove('hidden');
+                setTimeout(() => {
+                    messageEl.classList.add('hidden');
+                }, duration);
+            }
+            
+            // Попытка автоматического воспроизведения
+            function attemptAutoplay() {
+                // Установка максимальной громкости
+                video.volume = 1.0;
+                
+                const playPromise = video.play();
+                
+                if (playPromise !== undefined) {
+                    playPromise
+                        .then(() => {
+                            // Автовоспроизведение успешно
+                            enterFullscreen();
+                        })
+                        .catch(error => {
+                            // Автовоспроизведение не удалось
+                            showMessage('Нажмите для запуска видео', 4000);
+                            
+                            // При клике в любом месте пытаемся снова
+                            document.addEventListener('click', function() {
+                                video.play().then(() => {
+                                    enterFullscreen();
+                                }).catch(e => {
+                                    showMessage('Не удалось воспроизвести видео');
+                                });
+                            }, { once: true });
+                        });
+                }
+            }
+            
+            // Вход в полноэкранный режим
+            function enterFullscreen() {
+                const container = document.getElementById('video-container');
+                
+                if (container.requestFullscreen) {
+                    container.requestFullscreen().catch(err => {
+                        console.log('Ошибка полноэкранного режима:', err);
+                    });
+                } else if (container.webkitRequestFullscreen) {
+                    container.webkitRequestFullscreen();
+                } else if (container.msRequestFullscreen) {
+                    container.msRequestFullscreen();
+                } else if (container.mozRequestFullScreen) {
+                    container.mozRequestFullScreen();
+                }
+            }
+            
+            // Запрет скролла и масштабирования
+            function disableScrollAndZoom() {
+                // Запрет скролла
+                document.body.style.overflow = 'hidden';
+                
+                // Запрет масштабирования на мобильных устройствах
+                document.addEventListener('touchmove', function(e) {
+                    if (e.touches.length > 1) {
+                        e.preventDefault();
+                    }
+                }, { passive: false });
+                
+                // Отключаем контекстное меню
+                document.addEventListener('contextmenu', function(e) {
+                    e.preventDefault();
+                });
+            }
+            
+            // Попытка автоматического воспроизведения при загрузке страницы
+            attemptAutoplay();
+            disableScrollAndZoom();
+            
+            // Переход в полноэкранный режим при любом клике (если не сработало автоматически)
+            document.addEventListener('click', enterFullscreen, { once: true });
+        });
+    </script>
+</body>
+</html>
